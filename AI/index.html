@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DeepSeek V4 Pro AI 助手</title>
-    <!-- 基础图标 -->
+    <!-- 基础图标（保持不变） -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -25,8 +25,37 @@
             margin: 0 auto;
             padding: 20px;
         }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+        .control-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .clear-btn {
+            padding: 8px 15px;
+            background: #ff4d4f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: auto;
+        }
         .chat-container {
-            height: 600px;
+            height: 550px;
             background: #fff;
             border-radius: 15px;
             padding: 25px;
@@ -51,6 +80,20 @@
             color: #333;
             margin-right: auto;
             white-space: pre-wrap;
+        }
+        .thinking-block {
+            background: #fff7e6;
+            color: #d46b08;
+            border: 1px solid #ffd591;
+            margin-right: auto;
+            font-size: 14px;
+        }
+        .search-block {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+            margin-right: auto;
+            font-size: 14px;
         }
         .input-area {
             display: flex;
@@ -90,6 +133,18 @@
     </style>
 </head>
 <body>
+    <div class="controls">
+        <div class="control-item">
+            <input type="checkbox" id="enableThinking" checked>
+            <label for="enableThinking">深度思考</label>
+        </div>
+        <div class="control-item">
+            <input type="checkbox" id="enableSearch">
+            <label for="enableSearch">联网搜索</label>
+        </div>
+        <button class="clear-btn" id="clearMemory">清空记忆</button>
+    </div>
+
     <div class="chat-container" id="chat"></div>
     <div class="input-area">
         <input type="text" id="input" placeholder="向 DeepSeek V4 Pro 提问..." autocomplete="off">
@@ -97,80 +152,175 @@
     </div>
 
     <script>
+        // 页面元素
         const chat = document.getElementById('chat');
         const input = document.getElementById('input');
         const send = document.getElementById('send');
+        const enableThinking = document.getElementById('enableThinking');
+        const enableSearch = document.getElementById('enableSearch');
+        const clearMemory = document.getElementById('clearMemory');
+
+        // ========== OpenAI 标准协议核心配置 ==========
+        const API_CONFIG = {
+            apiKey: "sk-KZ6oMvP74DhyDmXID6FzrrBZ21xnm4O5rlwKGbCVQ4mXWPs2",
+            baseUrl: "https://ai.luogu.me/v1",
+            model: "deepseek-v4-pro",
+            temperature: 0.7,
+            memoryKey: "openai_chat_memory"
+        };
+
+        // 对话上下文（严格遵循OpenAI messages数组格式）
         let messages = [];
 
-        // ========== 内置配置 在这里改 ==========
-        const API_KEY = "sk-KZ6oMvP74DhyDmXID6FzrrBZ21xnm4O5rlwKGbCVQ4mXWPs2";
-        const API_URL = "https://ai.luogu.me/v1/chat/completions";
-        const MODEL_NAME = "deepseek-v4-pro";
-        // =======================================
+        // ==================== 1. 长期记忆功能（标准格式存储）====================
+        // 页面加载时读取历史对话
+        window.onload = () => {
+            const savedMessages = localStorage.getItem(API_CONFIG.memoryKey);
+            if (savedMessages) {
+                try {
+                    messages = JSON.parse(savedMessages);
+                    // 渲染历史消息
+                    messages.forEach(msg => {
+                        if (msg.role === "user") addMessage(msg.content, "user");
+                        if (msg.role === "assistant") addMessage(msg.content, "ai");
+                    });
+                } catch (e) {
+                    console.error("记忆加载失败", e);
+                    messages = [];
+                }
+            }
+        };
 
-        send.addEventListener('click', sendMessage);
-        input.addEventListener('keydown', e => e.key === 'Enter' && sendMessage());
+        // 保存对话到本地（严格存储OpenAI标准格式）
+        function saveChatMemory() {
+            localStorage.setItem(API_CONFIG.memoryKey, JSON.stringify(messages));
+        }
 
-        async function sendMessage() {
-            const text = input.value.trim();
-            if (!text) return;
+        // 清空记忆
+        clearMemory.addEventListener('click', () => {
+            if (confirm("确定要清空所有对话记忆吗？")) {
+                messages = [];
+                localStorage.removeItem(API_CONFIG.memoryKey);
+                chat.innerHTML = "";
+            }
+        });
 
-            addMessage(text, 'user');
-            input.value = '';
+        // ==================== 2. 发送事件绑定 ====================
+        send.addEventListener('click', sendChatMessage);
+        input.addEventListener('keydown', (e) => e.key === "Enter" && sendChatMessage());
+
+        // ==================== 3. 核心：OpenAI 标准协议请求 ====================
+        async function sendChatMessage() {
+            const userContent = input.value.trim();
+            if (!userContent) return;
+
+            // 1. 渲染用户消息
+            addMessage(userContent, "user");
+            input.value = "";
             send.disabled = true;
-            messages.push({ role: 'user', content: text });
 
-            const loading = addLoading();
+            // 2. 构建标准请求消息数组
+            const requestMessages = [...messages];
+            // 构建系统提示词（标准system角色，符合OpenAI规范）
+            let systemPrompt = "你是一个专业、 helpful 的AI助手，请准确回答用户的问题。";
+            
+            // 深度思考功能（通过标准system提示实现，无非标字段）
+            if (enableThinking.checked) {
+                systemPrompt += "\n请先输出你的思考过程，用标签包裹，再输出最终答案。";
+            }
+            // 联网搜索功能（通过标准system提示实现，兼容支持联网的接口）
+            if (enableSearch.checked) {
+                systemPrompt += "\n请优先使用联网搜索功能获取最新信息，回答时注明信息来源。";
+            }
+
+            // 按OpenAI规范插入system提示（仅在对话开头插入）
+            if (requestMessages.length === 0 || requestMessages[0].role !== "system") {
+                requestMessages.unshift({ role: "system", content: systemPrompt });
+            } else {
+                requestMessages[0].content = systemPrompt;
+            }
+
+            // 追加当前用户消息（标准user角色）
+            requestMessages.push({ role: "user", content: userContent });
+
+            // 3. 加载状态提示
+            const loadingNode = addLoadingNode();
 
             try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
+                // 4. 发起标准OpenAI协议请求
+                const response = await fetch(`${API_CONFIG.baseUrl}/chat/completions`, {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${API_CONFIG.apiKey}`
                     },
+                    // 严格遵循OpenAI官方请求体规范，仅使用标准字段
                     body: JSON.stringify({
-                        model: MODEL_NAME,
-                        messages: messages,
-                        temperature: 0.7
+                        model: API_CONFIG.model,
+                        messages: requestMessages,
+                        temperature: API_CONFIG.temperature
                     })
                 });
 
-                const data = await res.json();
-                chat.removeChild(loading);
+                const result = await response.json();
+                chat.removeChild(loadingNode);
 
-                if (data.error) {
-                    addMessage(`错误：${data.error.message}`, 'ai');
+                // 5. 标准错误处理（兼容OpenAI官方错误格式）
+                if (!response.ok || result.error) {
+                    const errorMsg = result.error?.message || `请求失败，状态码：${response.status}`;
+                    addMessage(`❌ 错误：${errorMsg}`, "ai");
+                    send.disabled = false;
                     return;
                 }
 
-                const reply = data.choices[0].message.content;
-                messages.push({ role: 'assistant', content: reply });
-                addMessage(reply, 'ai');
+                // 6. 标准响应解析（完全对齐OpenAI官方返回格式）
+                const aiMessage = result.choices[0].message;
+                let replyContent = aiMessage.content;
 
-            } catch (err) {
-                chat.removeChild(loading);
-                addMessage('请求失败，请稍后重试', 'ai');
-                console.error(err);
+                // 解析深度思考内容
+                if (enableThinking.checked && replyContent.includes("")) {
+                    const thinkMatch = replyContent.match(/([\s\S]*?)<\/think>/);
+                    if (thinkMatch) {
+                        const thinkContent = thinkMatch[1].trim();
+                        addMessage(`💡 思考过程：\n${thinkContent}`, "thinking-block");
+                        // 移除思考标签，保留纯回答
+                        replyContent = replyContent.replace(/[\s\S]*?<\/think>/, "").trim();
+                    }
+                }
+
+                // 7. 渲染AI回复，更新上下文与记忆
+                addMessage(replyContent, "ai");
+                messages.push({ role: "user", content: userContent });
+                messages.push({ role: "assistant", content: replyContent });
+                saveChatMemory();
+
+            } catch (error) {
+                chat.removeChild(loadingNode);
+                addMessage("❌ 网络请求失败，请检查接口地址或网络连接", "ai");
+                console.error("请求异常", error);
             }
 
             send.disabled = false;
         }
 
-        function addMessage(text, role) {
-            const div = document.createElement('div');
-            div.className = `message ${role}`;
-            div.textContent = text;
-            chat.appendChild(div);
+        // ==================== 工具函数 ====================
+        // 添加消息到页面
+        function addMessage(content, type) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = content;
+            chat.appendChild(messageDiv);
             chat.scrollTop = chat.scrollHeight;
         }
 
-        function addLoading() {
-            const div = document.createElement('div');
-            div.className = 'loading';
-            div.textContent = 'DeepSeek V4 Pro 思考中...';
-            chat.appendChild(div);
-            return div;
+        // 添加加载提示
+        function addLoadingNode() {
+            const loadingDiv = document.createElement("div");
+            loadingDiv.className = "loading";
+            loadingDiv.textContent = "AI 思考中...";
+            chat.appendChild(loadingDiv);
+            chat.scrollTop = chat.scrollHeight;
+            return loadingDiv;
         }
     </script>
 </body>
