@@ -92,7 +92,7 @@
 <body>
     <div class="chat-container" id="chat"></div>
     <div class="input-area">
-        <input type="text" id="input" placeholder="向 DeepSeek V3.2 提问..." autocomplete="off">
+        <input type="text" id="input" placeholder="向 DeepSeek V4 Pro 提问..." autocomplete="off">
         <button id="send">发送</button>
     </div>
 
@@ -168,7 +168,7 @@
         function addLoading() {
             const div = document.createElement('div');
             div.className = 'loading';
-            div.textContent = 'DeepSeek V3.2 思考中...';
+            div.textContent = 'DeepSeek V4 Pro 思考中...';
             chat.appendChild(div);
             return div;
         }
