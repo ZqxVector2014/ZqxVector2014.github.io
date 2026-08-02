@@ -16,10 +16,3 @@ permalink: /about/
 ## 版权声明
 
 本博客文章都是小群一号成员投稿的文章，版权归作者所有，转载请与小群一号联系获得授权许可。
-
-<iframe
-	src="https://www.luogu.com.cn/team/75141"
-	frameborder="0"
-	width="850"
-	height="450"
-></iframe>
