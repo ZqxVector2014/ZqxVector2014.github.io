@@ -76,4 +76,4 @@ author: 张三
 
 ## 许可证
 
-代码部分采用 [MIT License](LICENSE)，文章内容版权归作者所有。
+代码部分采用 [Apache License](LICENSE)，文章内容版权归作者所有。
