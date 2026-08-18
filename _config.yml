@@ -1,9 +1,8 @@
 name: "in the Earth banana"
 description: "zqx's blog"
 
-avatar: https://raw.githubusercontent.com/cgy6666/cgy6666.github.io/refs/heads/main/images/fKhbGm7gZ.jpeg
-favicon: https://raw.githubusercontent.com/cgy6666/cgy6666.github.io/refs/heads/main/images/fKhbGm7gZ.ico
-
+avatar: https://cdn.luogu.com.cn/upload/usericon/1279390.png
+favicon: https://s11.aconvert.com/convert/p3r68-cdx67/74xil-8qtc3-001.ico
 navigation:
   - name: 首页
     url: /
@@ -17,27 +16,27 @@ paginate: 8
 excerpt_separator: <!-- more -->
 
 footer-links:
-  zhihu: wei-xin-yong-hu-16-68-4
-  email: 2304342691@qq.com
+  zhihu: 
+  email: zqxcc@outlook.com
   facebook:
-  github: cgy6666
+  github: ZqxVector2014
   rss: welcome!
   twitter: 
   youtube:
 
-footer-text: Copyright (c) 2026 FIRESTAR
+footer-text: Copyright (c) 2026 ZQX
 
-url: https://xqyhcc.qzz.io
+url: https://zqxcc.dpdns.org
 
 permalink: /:title/
 paginate_path: /page:num/
 
 # Gitalk
 gitalk:
-  clientID: Ov23liVPo6tZwZ0aylrq
-  clientSecret: de2653582d4df67dd7e1d81f31d08da2749c70b2
-  repo: cgy6666.github.io
-  owner: cgy6666
+  clientID: Ov23liCyF1yK8Jk12I3J
+  clientSecret: 86259717d262da8dc9ac69cd73b1f42be3844546
+  repo: ZqxVector2014.github.io
+  owner: ZqxVector2014
 
 # The release of Jekyll Now
 version: v1.2.0
