@@ -1,9 +1,9 @@
 # 这是 Zqx 博客的存放仓库
 # zqxcc.dpdns.org
 
-小群一号的团队技术博客，基于 [Jekyll](https://jekyllrb.com/) 构建，托管在 GitHub Pages & Cloudflare。
+Zqx 的个人技术博客，基于 [Jekyll](https://jekyllrb.com/) 构建，托管在 GitHub Pages & Cloudflare。
 
-在线访问：<zqxcc.dpdns.org>
+在线访问：<https://zqxcc.dpdns.org>
 
 ## 功能特性
 
